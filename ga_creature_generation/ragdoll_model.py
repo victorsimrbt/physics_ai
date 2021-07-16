@@ -16,3 +16,11 @@ def motor_net(num_joints=5):
     x = Activation('sigmoid')(x)
     model = Model(motor_input, x)
     return model
+
+def arm_net(num_joints=5):
+    arm_input = Input(1,num_joints)
+    x = Dense(10)(arm_input)
+    x = Dense(1)(x)
+    x = Activation('sigmoid')(x)
+    model = Model(arm_input, x)
+    return model

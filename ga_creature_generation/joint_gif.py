@@ -7,10 +7,9 @@ from pygame.locals import *
 
 import math
 from PIL import Image
-import numpy as np
 
 space = pymunk.Space()
-space.gravity = 0, 900
+space.gravity = 0, 1000
 b0 = space.static_body
 
 size = w, h = 800, 500
@@ -21,6 +20,13 @@ BLACK = (0, 0, 0)
 GRAY = (220, 220, 220)
 WHITE = (255, 255, 255)
 
+
+class PinJoint:
+    def __init__(self, b, b2, a=(0, 0), a2=(0, 0)):
+        joint = pymunk.constraints.PinJoint(b, b2, a, a2)
+        space.add(joint)
+
+
 class PivotJoint:
     def __init__(self, b, b2, a=(0, 0), a2=(0, 0), collide=True):
         joint = pymunk.constraints.PinJoint(b, b2, a, a2)
@@ -28,9 +34,50 @@ class PivotJoint:
         space.add(joint)
 
 
+class SlideJoint:
+    def __init__(self, b, b2, a=(0, 0), a2=(0, 0), min=50, max=100, collide=True):
+        joint = pymunk.constraints.SlideJoint(b, b2, a, a2, min, max)
+        joint.collide_bodies = collide
+        space.add(joint)
+
+
+class GrooveJoint:
+    def __init__(self, a, b, groove_a, groove_b, anchor_b):
+        joint = pymunk.constraints.GrooveJoint(
+            a, b, groove_a, groove_b, anchor_b)
+        joint.collide_bodies = False
+        space.add(joint)
+
+
+class DampedRotarySpring:
+    def __init__(self, b, b2, angle, stiffness, damping):
+        joint = pymunk.constraints.DampedRotarySpring(
+            b, b2, angle, stiffness, damping)
+        space.add(joint)
+
+
+class RotaryLimitJoint:
+    def __init__(self, b, b2, min, max, collide=True):
+        joint = pymunk.constraints.RotaryLimitJoint(b, b2, min, max)
+        joint.collide_bodies = collide
+        space.add(joint)
+
+
+class RatchetJoint:
+    def __init__(self, b, b2, phase, ratchet):
+        joint = pymunk.constraints.GearJoint(b, b2, phase, ratchet)
+        space.add(joint)
+
+
 class SimpleMotor:
     def __init__(self, b, b2, rate):
         joint = pymunk.constraints.SimpleMotor(b, b2, rate)
+        space.add(joint)
+
+
+class GearJoint:
+    def __init__(self, b, b2, phase, ratio):
+        joint = pymunk.constraints.GearJoint(b, b2, phase, ratio)
         space.add(joint)
 
 
@@ -43,6 +90,17 @@ class Segment:
         shape.elasticity = 0.5
         shape.filter = pymunk.ShapeFilter(group=1)
         shape.color = (0, 255, 0, 0)
+        space.add(self.body, shape)
+
+
+class Circle:
+    def __init__(self, pos, radius=20):
+        self.body = pymunk.Body()
+        self.body.position = pos
+        shape = pymunk.Circle(self.body, radius)
+        shape.density = 0.01
+        shape.friction = 0.5
+        shape.elasticity = 1
         space.add(self.body, shape)
 
 
@@ -72,37 +130,39 @@ class Poly:
         space.add(self.body, shape)
 
 
-class App:
-    def __init__(self,draw=True,steps = 100):
+class Rectangle:
+    def __init__(self, pos, size=(80, 50)):
+        self.body = pymunk.Body()
+        self.body.position = pos
 
+        shape = pymunk.Poly.create_box(self.body, size)
+        shape.density = 0.1
+        shape.elasticity = 1
+        shape.friction = 1
+        space.add(self.body, shape)
+
+
+class App:
+    def __init__(self):
         pygame.init()
-        self.draw_bool = draw
         self.clock = pygame.time.Clock()
-        if self.draw_bool == True:
-            self.screen = pygame.display.set_mode(size)
-            self.draw_options = DrawOptions(self.screen)
+        self.screen = pygame.display.set_mode(size)
+        self.draw_options = DrawOptions(self.screen)
         self.running = True
-        self.steps = steps
-        self.gif = 0
+        self.gif = 100
         self.images = []
 
-    def run(self,functions = None):
-        comp_steps = 0
-        while comp_steps < steps:
+    def run(self):
+        while self.running:
             for event in pygame.event.get():
                 self.do_event(event)
-            if functions:
-                for function in functions:
-                    function()
-            if self.draw_bool:
-                self.draw()
+
+            self.draw()
             self.clock.tick(fps)
 
             for i in range(steps):
                 space.step(1/fps/steps)
-            comp_steps += 1
-        for body in space.bodies:
-            space.remove(body)
+
         pygame.quit()
 
     def do_event(self, event):
@@ -127,6 +187,7 @@ class App:
         text = f'fpg: {self.clock.get_fps():.1f}'
         pygame.display.set_caption(text)
         self.make_gif()
+        print(self.gif)
 
     def make_gif(self):
         if self.gif > 0:
@@ -141,4 +202,3 @@ class App:
                                     save_all=True, append_images=self.images[1:],
                                     optimize=True, duration=1000//fps, loop=0)
                 self.images = []
-

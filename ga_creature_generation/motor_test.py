@@ -1,5 +1,4 @@
 from joint import *
-from genetic import *
 import numpy as np
 import random
 Box()
@@ -15,4 +14,7 @@ for i in range(len(vs)):
     arm = Segment(p+vs[i], limbs[i])
     PivotJoint(torso.body, arm.body, vs[i], (0, 0))
     SimpleMotor(torso.body,arm.body,random.randint(1,5))
-App(draw=True).run()
+  
+app = App()  
+app.run()
+app.make_gif()

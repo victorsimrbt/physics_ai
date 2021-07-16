@@ -13,11 +13,14 @@ class genetic_algorithm:
             def __init__(self):
                 self.body_net = body_net(num_joints)
                 self.motor_net = motor_net(num_joints)
+                self.arm_net = arm_net(num_joints)
                 self.fitness = 0
             def apply_body_weights(self,weights):
                 self.body_net.set_weights(weights)
             def apply_motor_weights(self,weights):
                 self.motor_net.set_weights(weights)
+            def apply_arm_weights(self,weights):
+                self.arm_net.set_weights(weights)
             def __str__(self):
                     return 'Loss: ' + str(self.fitness)
         
@@ -68,6 +71,16 @@ class genetic_algorithm:
                 motor_child2_genes = np.array(motor_genes1[0:motor_split].tolist() + motor_genes2[motor_split:].tolist())
                 motor_child1_genes = unflatten(motor_child1_genes,motor_shapes)
                 motor_child2_genes = unflatten(motor_child2_genes,motor_shapes)
+                
+                arm_shapes = [a.shape for a in parent1.arm_net.get_weights()]
+                arm_genes1 = np.concatenate([a.flatten() for a in parent1.arm_net.get_weights()])
+                arm_genes2 = np.concatenate([a.flatten() for a in parent2.arm_net.get_weights()])
+                arm_split = random.randint(0,len(arm_genes1)-1)
+
+                arm_child1_genes = np.array(arm_genes1[0:arm_split].tolist() + arm_genes2[arm_split:].tolist())
+                arm_child2_genes = np.array(arm_genes1[0:arm_split].tolist() + arm_genes2[arm_split:].tolist())
+                arm_child1_genes = unflatten(arm_child1_genes,arm_shapes)
+                arm_child2_genes = unflatten(arm_child2_genes,arm_shapes)
             
                 
                 child1.apply_body_weights(list(body_child1_genes))
@@ -75,6 +88,9 @@ class genetic_algorithm:
 
                 child1.apply_motor_weights(list(motor_child1_genes))
                 child2.apply_motor_weights(list(motor_child2_genes))
+                
+                child1.apply_arm_weights(list(arm_child1_genes))
+                child2.apply_arm_weights(list(arm_child2_genes))
                 
                 offspring.append(child1)
                 offspring.append(child2)
